@@ -15,7 +15,7 @@
 ---
 
 ## 🗓️ 开发计划
-
+- [ ] repo random walk : 在repo级别上进行随机游走， 预先构建repoMemory
 - [ ] 使用stepagent 重构repoagent, 并设定repo需求开发，issue解决等模版repoagent
 - [ ] 实现SubAgent机制
 
