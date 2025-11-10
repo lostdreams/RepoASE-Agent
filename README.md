@@ -151,7 +151,7 @@ asyncio.run(main())
 
 ### 方式二：Web界面使用（有前端）
 
-#### 1. 在 `agent_chat_server.py` 中注册你的Agent
+#### 1. 在 `fast_api.py` 中注册你的Agent
 
 ```python
 def initialize_agents():
