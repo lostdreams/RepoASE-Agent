@@ -141,7 +141,9 @@ async def main():
     )
     
     async for event in agent_stream:
+        print(event)
         if hasattr(event, 'response'):
+            print(f'模型最终结果{event.response}')
             print(event.response)
 
 asyncio.run(main())
@@ -240,13 +242,13 @@ repo-agent/
 
 ---
 
-## 🔧 高级用法
+## 🔧  基础使用
 
 ### 使用RepoMemory
 
 ```python
 from repo_agent.agent.repo_agent import RepoMemory
-
+# 注意，这里需要修改默认的repo_memory的存放地址
 # 加载已有记忆
 memory = RepoMemory.load(repo_name='my-repo')
 
