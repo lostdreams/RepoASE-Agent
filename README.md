@@ -3,7 +3,7 @@
 一个面向在多个代码仓下的进行自动化软件工程的repo level coding Agent, 本项目还在持续迭代中, 欢迎共同开发
 
 ## 🌟 核心特性
-- **放弃多Agent协作, 面向单Agent 的能力提升, 以subagent, context, step 等概念作为构建Agent的核心机制
+- **不使用多Agent协作**, 面向单Agent 的能力提升, 以subagent, context, step 等概念作为构建Agent的核心机制
 - **ContextAgent** ： 在context engineering视角下, 围绕任务的context构建来重新构建Agent的执行流程
 - **StepAgent**: 放弃多Agent架构，使用Step-Agent来实现在复杂长步骤下的agent的可控执行
 - **RepoAgent**: 放弃向量检索，采用Agent阅读文件方式实现repo理解，使用基础的文件阅读，目录打开，文本搜索等机制来实现在repo级别下编码
