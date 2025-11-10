@@ -22,6 +22,7 @@
 
 
 ## 📋 最新进展
+- ✅ 实现Repo Agent的context 压缩特性  - *- 2025年11月10日*
 - ✅ 实现Repo Agent，已支持在多个repo下进行代码编写任务， 实测可以在30+ tool调用下稳定运行  - *- 2025年11月10日*
 - ✅ 实现Step Agent，类似Plan Agent和Agent Graph的实现，定义场景中所有的Step对象 *- 2025年11月5日*
 - ✅ 实现基础的Function Call Agent
