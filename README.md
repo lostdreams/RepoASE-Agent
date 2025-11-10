@@ -235,8 +235,6 @@ repo-agent/
 │   │   ├── repo.py           # Repo工具
 │   │   └── repo_sandbox.py   # 沙箱环境
 │   └── util/                 # 工具函数
-├── agent_chat_server.py      # Web服务器
-├── agent_chat.html           # Web前端界面
 └── README.md
 ```
 
