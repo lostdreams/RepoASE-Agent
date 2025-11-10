@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Chat Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* 左侧设置面板 */
+        .settings-panel {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .setting-group {
+            margin-bottom: 24px;
+        }
+
+        .setting-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select.setting-input {
+            cursor: pointer;
+            background: white;
+        }
+
+        .btn-connect {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-connect:active {
+            transform: translateY(0);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .agent-info {
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+
+        .agent-info-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* 中间聊天区域 */
+        .chat-panel {
+            flex: 1;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px 24px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .chat-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f9fafb;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .message-content {
+            flex: 1;
+            background: white;
+            padding: 14px 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+
+        .message.user .message-time {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chat-input-container {
+            padding: 20px 24px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.2s;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-input:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .btn-send {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 右侧事件面板 */
+        .events-panel {
+            width: 340px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .events-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .events-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .event-item {
+            margin-bottom: 12px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+
+        .event-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-header {
+            padding: 14px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f9fafb;
+            transition: background 0.2s;
+        }
+
+        .event-header:hover {
+            background: #f3f4f6;
+        }
+
+        .event-type {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .event-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .event-icon.AgentInputEvent { background: #dbeafe; }
+        .event-icon.AgentThinkEvent { background: #fef3c7; }
+        .event-icon.AgentLLMCallEvent { background: #ddd6fe; }
+        .event-icon.AgentToolRequestEvent { background: #fed7aa; }
+        .event-icon.AgentResponse { background: #d1fae5; }
+
+        .event-time {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .event-details {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            background: white;
+        }
+
+        .event-item.expanded .event-details {
+            max-height: 600px;
+            padding: 14px 16px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .event-details-content {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .event-details-content strong {
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .event-details pre {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 11px;
+            margin-top: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .event-footer {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f3f4f6;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .btn-clear {
+            margin: 16px;
+            padding: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-clear:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧设置面板 -->
+        <div class="settings-panel">
+            <div class="settings-header">
+                ⚙️ Agent 配置
+            </div>
+            <div class="settings-content">
+                <div class="setting-group">
+                    <label class="setting-label">后端地址</label>
+                    <input type="text" class="setting-input" id="backendUrl" value="http://localhost:8000">
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">选择 Agent</label>
+                    <select class="setting-input" id="agentSelect">
+                        <option value="">请先连接后端</option>
+                    </select>
+                </div>
+
+                <button class="btn-connect" onclick="testConnection()">🔌 测试连接并加载Agent</button>
+
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">未连接</span>
+                </div>
+
+                <div class="agent-info" id="agentInfo" style="display: none;">
+                    <div class="agent-info-title">当前选择</div>
+                    <div id="agentInfoContent">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间聊天区域 -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-title">💬 Agent 对话</div>
+                <div class="chat-subtitle" id="chatSubtitle">请先选择一个Agent</div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        你好!我是AI Agent助手。请在左侧选择一个Agent，然后告诉我你需要什么帮助。
+                        <div class="message-time" id="welcomeTime"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chatInput" placeholder="请先选择Agent..." rows="2" disabled></textarea>
+                <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>发送</button>
+            </div>
+        </div>
+
+        <!-- 右侧事件面板 -->
+        <div class="events-panel">
+            <div class="events-header">
+                <span>📊 事件流</span>
+                <span id="eventCount" style="font-size: 12px; opacity: 0.9;">0 事件</span>
+            </div>
+            <div class="events-content" id="eventsContent">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <div>等待事件...</div>
+                </div>
+            </div>
+            <button class="btn-clear" onclick="clearEvents()">🗑️ 清空事件</button>
+        </div>
+    </div>
+
+    <script>
+        // 初始化欢迎时间
+        document.getElementById('welcomeTime').textContent = new Date().toLocaleTimeString('zh-CN');
+
+        // 全局状态
+        let currentEventSource = null;
+        let agentList = [];
+        let selectedAgentData = null;
+        let eventCounter = 0;
+
+        // 获取事件图标
+        function getEventIcon(eventType) {
+            const icons = {
+                'AgentInputEvent': '📥',
+                'AgentThinkEvent': '🤔',
+                'AgentLLMCallEvent': '🧠',
+                'AgentToolRequestEvent': '🔧',
+                'AgentResponse': '✅'
+            };
+            return icons[eventType] || '❓';
+        }
+
+        // 获取事件详情内容
+        function getEventDetailsContent(event, eventType) {
+            let content = '';
+            
+            if (eventType === 'AgentInputEvent' && event.task) {
+                content = `<div><strong>任务:</strong> ${event.task}</div>`;
+            }
+            else if (eventType === 'AgentThinkEvent' && event.reason_content) {
+                content = `<div><strong>思考过程:</strong></div><div>${event.reason_content}</div>`;
+            }
+            else if (eventType === 'AgentLLMCallEvent') {
+                const msgCount = event.messages?.length || 0;
+                content = `<div><strong>消息数量:</strong> ${msgCount}</div>`;
+                
+                if (event.response) {
+                    const respContent = typeof event.response.content === 'string' 
+                        ? event.response.content.substring(0, 200) + (event.response.content.length > 200 ? '...' : '')
+                        : 'Tool calls';
+                    content += `<div style="margin-top: 8px;"><strong>LLM响应:</strong></div><div>${respContent}</div>`;
+                }
+                
+                if (event.messages && event.messages.length > 0) {
+                    content += `<pre>${JSON.stringify(event.messages, null, 2)}</pre>`;
+                }
+            }
+            else if (eventType === 'AgentToolRequestEvent' && event.tool_calls) {
+                const toolNames = event.tool_calls.map(tc => tc.tool_name).join(', ');
+                content = `<div><strong>调用工具:</strong> ${toolNames}</div>`;
+                
+                if (event.tool_execution_results) {
+                    content += `<div style="margin-top: 8px;"><strong>执行结果:</strong></div>`;
+                    event.tool_execution_results.forEach(result => {
+                        content += `<div style="margin-top: 4px;">• ${result.name}: ${result.content.substring(0, 100)}${result.content.length > 100 ? '...' : ''}</div>`;
+                    });
+                }
+                
+                content += `<pre>${JSON.stringify(event.tool_calls, null, 2)}</pre>`;
+            }
+            else if (eventType === 'AgentResponse' && event.response) {
+                content = `<div><strong>最终回复:</strong></div><div>${event.response}</div>`;
+            }
+            
+            return content || '<div>无详细信息</div>';
+        }
+
+        // 添加事件到右侧面板
+        function addEventToPanel(event) {
+            const eventsContent = document.getElementById('eventsContent');
+            
+            // 清除空状态
+            if (eventCounter === 0) {
+                eventsContent.innerHTML = '';
+            }
+            
+            eventCounter++;
+            document.getElementById('eventCount').textContent = `${eventCounter} 事件`;
+            
+            const eventType = event.event_type;
+            const eventIcon = getEventIcon(eventType);
+            const eventDetails = getEventDetailsContent(event, eventType);
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event-item';
+            
+            eventDiv.innerHTML = `
+                <div class="event-header" onclick="toggleEventDetails(this)">
+                    <div class="event-type">
+                        <div class="event-icon ${eventType}">${eventIcon}</div>
+                        <span>${eventType}</span>
+                    </div>
+                    <span class="event-time">${new Date(event.create_time).toLocaleTimeString('zh-CN')}</span>
+                </div>
+                <div class="event-details">
+                    <div class="event-details-content">
+                        ${eventDetails}
+                        <div class="event-footer">
+                            耗时: ${event.duration_seconds?.toFixed(3) || 0}s | Agent: ${event.agent_name}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            eventsContent.appendChild(eventDiv);
+            eventsContent.scrollTop = eventsContent.scrollHeight;
+        }
+
+        // 切换事件详情
+        function toggleEventDetails(header) {
+            const eventItem = header.parentElement;
+            eventItem.classList.toggle('expanded');
+        }
+
+        // 清空事件
+        function clearEvents() {
+            const eventsContent = document.getElementById('eventsContent');
+            eventsContent.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <div>等待事件...</div>
+                </div>
+            `;
+            eventCounter = 0;
+            document.getElementById('eventCount').textContent = '0 事件';
+        }
+
+        // 测试连接并加载Agent列表
+        async function testConnection() {
+            const backendUrl = document.getElementById('backendUrl').value;
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            try {
+                const response = await fetch(`${backendUrl}/health`);
+                if (response.ok) {
+                    statusDot.classList.add('connected');
+                    statusText.textContent = '已连接';
+                    await loadAgentList();
+                } else {
+                    throw new Error('连接失败');
+                }
+            } catch (error) {
+                statusDot.classList.remove('connected');
+                statusText.textContent = '连接失败';
+                alert('无法连接到后端服务,请检查地址是否正确');
+            }
+        }
+
+        // 加载Agent列表
+        async function loadAgentList() {
+            const backendUrl = document.getElementById('backendUrl').value;
+            try {
+                const response = await fetch(`${backendUrl}/agents`);
+                if (response.ok) {
+                    const data = await response.json();
+                    agentList = data.agents || [];
+                    
+                    const agentSelect = document.getElementById('agentSelect');
+                    agentSelect.innerHTML = '';
+                    
+                    if (agentList.length === 0) {
+                        agentSelect.innerHTML = '<option value="">没有可用的Agent</option>';
+                        return;
+                    }
+                    
+                    agentList.forEach(agent => {
+                        const option = document.createElement('option');
+                        option.value = agent.name;
+                        option.textContent = `${agent.name} - ${agent.description}`;
+                        agentSelect.appendChild(option);
+                    });
+                    
+                    agentSelect.value = agentList[0].name;
+                    onAgentChange();
+                }
+            } catch (error) {
+                console.error('加载Agent列表失败:', error);
+                alert('加载Agent列表失败: ' + error.message);
+            }
+        }
+
+        // Agent选择变化
+        document.getElementById('agentSelect').addEventListener('change', onAgentChange);
+
+        function onAgentChange() {
+            const agentSelect = document.getElementById('agentSelect');
+            const selectedName = agentSelect.value;
+            
+            if (!selectedName) {
+                document.getElementById('chatInput').disabled = true;
+                document.getElementById('sendBtn').disabled = true;
+                document.getElementById('chatInput').placeholder = '请先选择Agent...';
+                document.getElementById('chatSubtitle').textContent = '请先选择一个Agent';
+                document.getElementById('agentInfo').style.display = 'none';
+                return;
+            }
+            
+            selectedAgentData = agentList.find(a => a.name === selectedName);
+            
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('chatInput').placeholder = `与 ${selectedName} 对话...`;
+            document.getElementById('chatSubtitle').textContent = `正在与 ${selectedName} 对话`;
+            
+            document.getElementById('agentInfo').style.display = 'block';
+            document.getElementById('agentInfoContent').innerHTML = `
+                <strong>${selectedAgentData.name}</strong><br>
+                ${selectedAgentData.description}<br>
+                <small>工具数: ${selectedAgentData.tools_count}</small>
+            `;
+        }
+
+        // 添加聊天消息
+        function addChatMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const avatar = role === 'user' ? '👤' : '🤖';
+            const time = new Date().toLocaleTimeString('zh-CN');
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    ${content}
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            const agentSelect = document.getElementById('agentSelect');
+            const selectedAgent = agentSelect.value;
+            
+            if (!message || !selectedAgent) return;
+
+            // 清空当前对话的事件
+            clearEvents();
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            addChatMessage('user', message);
+            input.value = '';
+
+            const backendUrl = document.getElementById('backendUrl').value;
+            
+            try {
+                if (currentEventSource) {
+                    currentEventSource.close();
+                }
+
+                const eventSource = new EventSource(
+                    `${backendUrl}/agent/stream?task=${encodeURIComponent(message)}&agent_name=${encodeURIComponent(selectedAgent)}`
+                );
+                currentEventSource = eventSource;
+
+                let assistantMessageAdded = false;
+
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.event_type === 'error') {
+                        addChatMessage('assistant', '错误: ' + data.error);
+                        assistantMessageAdded = true;
+                        eventSource.close();
+                        sendBtn.disabled = false;
+                        input.disabled = false;
+                        return;
+                    }
+                    
+                    // 添加事件到右侧面板
+                    if (data.event_type) {
+                        addEventToPanel(data);
+                    }
+
+                    // AgentResponse显示在聊天框
+                    if (data.event_type === 'AgentResponse' && data.response && !assistantMessageAdded) {
+                        addChatMessage('assistant', data.response);
+                        assistantMessageAdded = true;
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    console.error('SSE错误:', error);
+                    eventSource.close();
+                    sendBtn.disabled = false;
+                    input.disabled = false;
+                    
+                    if (!assistantMessageAdded) {
+                        addChatMessage('assistant', '抱歉,处理请求时出现错误。请稍后重试。');
+                    }
+                };
+
+                eventSource.addEventListener('agent_response', (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.response && !assistantMessageAdded) {
+                        addChatMessage('assistant', data.response);
+                        assistantMessageAdded = true;
+                    }
+                    eventSource.close();
+                    sendBtn.disabled = false;
+                    input.disabled = false;
+                });
+
+            } catch (error) {
+                console.error('发送消息失败:', error);
+                addChatMessage('assistant', '发送失败,请检查网络连接');
+                sendBtn.disabled = false;
+                input.disabled = false;
+            }
+        }
+
+        // 回车发送消息
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 页面加载时测试连接
+        window.addEventListener('load', () => {
+            const currentUrl = window.location.origin;
+            document.getElementById('backendUrl').value = currentUrl;
+            testConnection();
+        });
+    </script>
+</body>
+</html>
